@@ -57,11 +57,26 @@ def update_add_node(doc, parent, parent_field):
 	doctype = doc.doctype
 	name = doc.name
 
+	"""
 	# get the last sibling of the parent
 	if parent:
 		left, right = frappe.db.sql("select lft, rgt from `tab{0}` where name=%s"
 			.format(doctype), parent)[0]
 		validate_loop(doc.doctype, doc.name, left, right)
+	else: # root
+		right = frappe.db.sql("select ifnull(max(rgt),0)+1 from `tab%s` \
+			where ifnull(`%s`,'') =''" % (doctype, parent_field))[0][0]
+	right = right or 1
+	"""
+
+	# get the last sibling of the parent
+	if parent:
+		left = frappe.db.sql("select lft, rgt from `tab{0}` where name=%s"
+			.format(doctype), parent, as_dict=1)
+		if left is not None and len(left)!=0:
+			left = left[0]['lft']
+			right = left[0]['rgt']
+			validate_loop(doc.doctype, doc.name, left, right)
 	else: # root
 		right = frappe.db.sql("select ifnull(max(rgt),0)+1 from `tab%s` \
 			where ifnull(`%s`,'') =''" % (doctype, parent_field))[0][0]
